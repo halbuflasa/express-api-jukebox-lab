@@ -6,12 +6,12 @@ const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
 const morgan = require('morgan');
-const verifyToken = require('./middleware/verify-token');
+//const verifyToken = require('./middleware/verify-token');
 
 // Controllers 
-const testJWTRouter = require('./controllers/test-jwt');
-const usersRouter = require('./controllers/users');
-const profilesRouter = require('./controllers/profiles');
+//const testJWTRouter = require('./controllers/test-jwt');
+//const usersRouter = require('./controllers/users');
+//const profilesRouter = require('./controllers/profiles');
 const tracksController = require('./controllers/tracks');
 
 
@@ -27,12 +27,12 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/test-jwt', testJWTRouter);
-app.use('/users', usersRouter);
-app.use('/profiles', profilesRouter);
+//app.use('/test-jwt', testJWTRouter);
+//app.use('/users', usersRouter);
+//app.use('/profiles', profilesRouter);
 
 // Protected Routes
-app.use(verifyToken);
+//app.use(verifyToken);
 
 app.use('/tracks', tracksController)
 
