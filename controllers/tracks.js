@@ -25,120 +25,70 @@ router.post('/', async (req, res) => {
 // GET - Index
 router.get('/', async (req, res) => {
     try {
-        const itemsFound = await Item.find().populate('owner');
-        if (!itemsFound.length) {
-            res.status(404);
-            throw new Error('No items found');
+        const tracks = await Track.find();
+        if (!tracks.length) {
+            return res.status(404).json({ error: 'No tracks found' });
         }
-        res.status(200).json(itemsFound);
+        res.status(200).json(tracks);
     } catch (error) {
-        if (res.statusCode === 404) {
-            res.json({ error: error.message })
-        } else {
-            res.status(500).json({ error: error.message });
-        }
+        console.error('Error retrieving tracks:', error);
+        res.status(500).json({ error: 'An error occurred while retrieving the tracks' });
     }
 });
 
-// GET - Show one item by itemId
-router.get('/:itemId', async (req, res) => {  
+// GET - Retrieve a single track by ID
+router.get('/:id', async (req, res) => {
     try {
-        const foundItem = await Item.findById(req.params.itemId).populate('owner');
-        if (!foundItem) {
-            res.status(404);
-            throw new Error('Item not found.');
-          }
-        res.status(200).json(foundItem);
-    }catch(error){
-        if (res.statusCode === 404) {
-            res.json({ error: error.message });
-        } else {
-            res.status(500).json({ error: error.message });
-          }
-    }
+        const track = await Track.findById(req.params.id);
 
+        if (!track) {
+            return res.status(404).json({ error: 'Track not found' });
+        }
+
+        res.status(200).json(track);
+    } catch (error) {
+        console.error('Error retrieving track:', error);
+        res.status(500).json({ error: 'An error occurred while retrieving the track' });
+    }
 });
 
-// PUT - Update Item
-router.put('/:itemId', async (req, res) => {
+// PUT - Update an existing track
+router.put('/:id', async (req, res) => {
     try {
-        // Find the original item before update
-        const item = await Item.findById(req.params.itemId).populate('owner');
-        if (!item) {
-            return res.status(404).send("Item not found.");
-        }
-        if (!item.owner._id.equals(req.user._id)) {
-            return res.status(403).send("You're not allowed to do that!");
-        }
-
-        // Track changes between original item and new values in req.body
-        const changes = [];
-        for (const key in req.body) {
-            if (item[key] !== undefined && item[key] !== req.body[key] && key !== 'owner' && key !== '_id') {
-                changes.push(`${key} from "${item[key]}" to "${req.body[key]}"`);
-            }
-        }
-
-        // Update the item with the new values
-        const updatedItem = await Item.findByIdAndUpdate(
-            req.params.itemId,
+        const updatedTrack = await Track.findByIdAndUpdate(
+            req.params.id,
             req.body,
             { new: true, runValidators: true }
         );
-        updatedItem._doc.owner = req.user;
 
-        // Create a detailed activity log if there are changes
-        if (changes.length > 0) {
-            const changeDescription = changes.join(', ');
-            await Activity.create({
-                user: req.user._id,
-                item: updatedItem._id,
-                action: 'UPDATE',
-                timestamp: new Date(),
-                details: `User ${req.user.username} updated item "${updatedItem.name}": ${changeDescription}`,
-            });
-        } else {
-            await Activity.create({
-                user: req.user._id,
-                item: updatedItem._id,
-                action: 'UPDATE',
-                timestamp: new Date(),
-                details: `User ${req.user.username} made no changes to item "${updatedItem.name}"`,
-            });
+        if (!updatedTrack) {
+            return res.status(404).json({ error: 'Track not found' });
         }
 
-        res.status(200).json(updatedItem);
+        res.status(200).json(updatedTrack);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
+        console.error('Error updating track:', error);
+        res.status(500).json({ error: 'An error occurred while updating the track' });
+    }
+});
+
+// DELETE - Remove a track by ID
+router.delete('/:id', async (req, res) => {
+    try {
+        const deletedTrack = await Track.findByIdAndDelete(req.params.id);
+
+        if (!deletedTrack) {
+            return res.status(404).json({ error: 'Track not found' });
+        }
+
+        res.status(200).json(deletedTrack);
+    } catch (error) {
+        console.error('Error deleting track:', error);
+        res.status(500).json({ error: 'An error occurred while deleting the track' });
     }
 });
 
 
-// DELETE - Remove
-router.delete('/:itemId', async (req, res) => {
-    try {
-        const deletedItem = await Item.findByIdAndDelete({ _id: req.params.itemId }).populate('owner');
-        if (!deletedItem) {
-            res.status(404)
-            throw new Error('Item not found.')
-        }
-        await Activity.create({
-            user: req.user._id,
-            item: deletedItem._id,
-            action: 'DELETE',
-            timestamp: new Date(),
-            details: `User ${req.user.username} deleted item "${deletedItem.name}"`,
-        });
-        res.status(200).json(deletedItem)
-    } catch (error) {
-        if (res.statusCode === 404) {
-            res.json({ error: error.message })
-        } else {
-            res.status(500).json({ error: error.message })
-        }
-    }
-})
 
 
 module.exports = router
